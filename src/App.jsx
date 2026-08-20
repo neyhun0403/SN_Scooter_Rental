@@ -136,27 +136,27 @@ function Dashboard() {
   const monthRevenue = useMemo(() => {
     if (!rentals) return 0;
     const ym = todayISO().slice(0, 7);
-    return rentals.filter((r) => (r.start_date  "").slice(0, 7) === ym).reduce((s, r) => s + (Number(r.final_price ?? r.price)  0), 0);
+    return rentals.filter((r) => (r.start_date || "").slice(0, 7) === ym).reduce((s, r) => s + (Number(r.final_price ?? r.price) || 0), 0);
   }, [rentals]);
 
   const activeCount = useMemo(() => (rentals || []).filter((r) => r.status === "active").length, [rentals]);
 
-  /* ---- បង្កតការជួលថ្មី ---- */
+  /* ---- បង្កើតការជួលថ្មី ---- */
   const registerRental = async (form) => {
     const { error } = await supabase.from("rentals").insert([{ ...form, status: "active" }]);
     if (error) { showToast("មានបញ្ហា៖ " + error.message); return; }
     await supabase.from("motorcycles").update({ status: "rented" }).eq("id", form.motorcycle_id);
     await Promise.all([fetchRentals(), fetchMotorcycles()]);
-    showToast("បានចឈ្មោះជួលដោយជគជ័យ ✓");
+    showToast("បានចុះឈ្មោះជួលដោយជោគជ័យ ✓");
     setPage("manage");
   };
 
-  /* ---- កែសមរួល / ដាក់ស្នើឡើងវញ ---- */
+  /* ---- កែសម្រួល / ដាក់ស្នើឡើងវិញ ---- */
   const updateRental = async (updated) => {
     const { id, ...fields } = updated;
     const { error } = await supabase.from("rentals").update(fields).eq("id", id);
-    if (error) { showToast("មនបញ្ហា៖ " + error.message); return; }
-    await fetchRentals();await fetchRentals();
+    if (error) { showToast("មានបញ្ហា៖ " + error.message); return; }
+    await fetchRentals();
     showToast("បានធ្វើបច្ចុប្បន្នភាពដោយជោគជ័យ ✓");
   };
 
@@ -237,7 +237,8 @@ function Dashboard() {
         </header>
 
         <main className="mx-auto max-w-5xl px-4 py-6 sm:px-6">
-          {dbError && (<div className="mb-4 rounded-xl bg-red-50 px-4 py-3 text-sm text-red-700">
+          {dbError && (
+            <div className="mb-4 rounded-xl bg-red-50 px-4 py-3 text-sm text-red-700">
               មិនអាចភ្ជាប់ទៅមូលដ្ឋានទិន្នន័យបានទេ៖ {dbError}. សូមពិនិត្យ VITE_SUPABASE_URL / VITE_SUPABASE_ANON_KEY។
             </div>
           )}
@@ -308,7 +309,8 @@ function Receipt({ rental, motorcycle }) {
         <>
           <div className="my-4 border-t border-dashed border-gray-400" />
           <div className="text-xs">
-            <div className="font-semibold">កំណត់សម្គាល់៖</div><div className="text-gray-600">{rental.notes}</div>
+            <div className="font-semibold">កំណត់សម្គាល់៖</div>
+            <div className="text-gray-600">{rental.notes}</div>
           </div>
         </>
       )}
@@ -365,17 +367,18 @@ function RegisterPage({ motorcycles, onSubmit }) {
 
   const submit = (e) => {
     e.preventDefault();
-    if (!form.customer_name  !form.customer_phone  !form.motorcycle_id || !form.expected_return_date) {
+    if (!form.customer_name || !form.customer_phone || !form.motorcycle_id || !form.expected_return_date) {
       setError("សូមបំពេញព័ត៌មានដែលមានសញ្ញា * ឱ្យបានគ្រប់ជាមុនសិន");
       return;
     }
     setError("");
-    onSubmit({ ...form, price: Number(form.price)  0, deposit: Number(form.deposit)  0 });
+    onSubmit({ ...form, price: Number(form.price) || 0, deposit: Number(form.deposit) || 0 });
     setForm({ ...blank, start_time: nowHHMM(), expected_return_time: nowHHMM() });
   };
 
   return (
-    <div className="mx-auto max-w-2xl"><div className="mb-5">
+    <div className="mx-auto max-w-2xl">
+      <div className="mb-5">
         <h1 className="text-xl font-bold">ចុះឈ្មោះជួលថ្មី</h1>
         <p className="mt-1 text-sm text-[#26302c]/55">បំពេញព័ត៌មានអតិថិជន និងម៉ូតូដែលជួល រួចចុច "រក្សាទុក"</p>
       </div>
@@ -438,7 +441,8 @@ function RegisterPage({ motorcycles, onSubmit }) {
         </div>
         <Field label="កំណត់សម្គាល់" hint="ស្រេចចិត្ត — ឧ. លេខលិខិតឆ្លងដែន, ការខូចខាតមុននេះ">
           <textarea className={inputCls} rows={2} value={form.notes} onChange={set("notes")} />
-        </Field>{error && <p className="rounded-lg bg-red-50 px-3 py-2 text-sm font-medium text-red-700">{error}</p>}
+        </Field>
+        {error && <p className="rounded-lg bg-red-50 px-3 py-2 text-sm font-medium text-red-700">{error}</p>}
         <button type="submit" className="w-full rounded-xl bg-[#c97b3d] py-3 text-[15px] font-bold text-white shadow-sm transition hover:bg-[#b56a30] active:scale-[0.99]">
           រក្សាទុក និងចុះឈ្មោះ
         </button>
@@ -461,7 +465,7 @@ function ManagePage({ rentals, motorcycles, onUpdate, onClose, onPrint }) {
       if (!query.trim()) return true;
       const q = query.trim().toLowerCase();
       const mc = mcById[r.motorcycle_id];
-      return r.customer_name?.toLowerCase().includes(q)  r.customer_phone?.toLowerCase().includes(q)  mc?.plate?.toLowerCase().includes(q);
+      return r.customer_name?.toLowerCase().includes(q) || r.customer_phone?.toLowerCase().includes(q) || mc?.plate?.toLowerCase().includes(q);
     });
   }, [rentals, filter, query, mcById]);
 
@@ -505,12 +509,13 @@ function ManagePage({ rentals, motorcycles, onUpdate, onClose, onPrint }) {
                     <button onClick={() => setEditing(r)} className="rounded-lg border border-[#26302c]/15 px-3.5 py-1.5 text-sm font-medium hover:bg-[#26302c]/5">កែសម្រួល</button>
                     {r.status === "active" && (
                       <button onClick={() => setClosingRental(r)} className="rounded-lg bg-emerald-600 px-3.5 py-1.5 text-sm font-semibold text-white hover:bg-emerald-700">បិទករណី ✓</button>
-                    )}</div>
+                    )}
+                  </div>
                 </div>
                 <div className="mt-3 flex flex-wrap items-center gap-3 border-t border-[#26302c]/8 pt-3">
                   {mc && <KeyTag plate={mc.plate}><span className="text-xs text-[#26302c]/50">{mc.brand}</span></KeyTag>}
                   <div className="text-sm text-[#26302c]/70">
-                    {r.rental_type === "monthly" ? "ជួលខែ" : "ជួលថ្ងៃ"} · {fmtDate(r.start_date)} {(r.start_time  "").slice(0, 5)} → {fmtDate(r.expected_return_date)} {(r.expected_return_time  "").slice(0, 5)}
+                    {r.rental_type === "monthly" ? "ជួលខែ" : "ជួលថ្ងៃ"} · {fmtDate(r.start_date)} {(r.start_time || "").slice(0, 5)} → {fmtDate(r.expected_return_date)} {(r.expected_return_time || "").slice(0, 5)}
                     <span className="ml-1.5 rounded bg-[#26302c]/5 px-1.5 py-0.5 text-xs font-medium">{fmtDuration(duration)}</span>
                     {r.actual_return_date && <> · ប្រគល់មកវិញ៖ {fmtDate(r.actual_return_date)} {(r.actual_return_time || "").slice(0, 5)}</>}
                   </div>
@@ -565,7 +570,8 @@ function CloseModal({ rental, onCancel, onConfirm }) {
             រយៈពេលជួលជាក់ស្តែង៖ {fmtDuration(actualDuration)}
             <div className="mt-0.5 text-xs opacity-70">(កាលកំណត់ដើម៖ {fmtDate(rental.expected_return_date)} {(rental.expected_return_time || "").slice(0, 5)})</div>
           </div>
-          <Field label="ថ្លៃដើម (កិច្ចព្រមព្រៀង)" hint="សម្រាប់ធ្វើជាឯកសារយោង"><input className={inputCls + " bg-[#26302c]/5"} value={fmtMoney(rental.price)} disabled />
+          <Field label="ថ្លៃដើម (កិច្ចព្រមព្រៀង)" hint="សម្រាប់ធ្វើជាឯកសារយោង">
+            <input className={inputCls + " bg-[#26302c]/5"} value={fmtMoney(rental.price)} disabled />
           </Field>
           <Field label="ចំនួនទឹកប្រាក់ត្រូវបង់ជាក់ស្ដែង (USD)" required hint="កែតម្លៃនេះបើគិតលុយតាមថ្ងៃប្រគល់មកវិញជាក់ស្តែង">
             <input type="number" min="0" step="0.5" className={inputCls} value={finalPrice} onChange={(e) => setFinalPrice(e.target.value)} />
@@ -626,7 +632,8 @@ function EditModal({ rental, motorcycles, onCancel, onSave }) {
         <div className="mt-5 flex gap-2">
           <button onClick={onCancel} className="flex-1 rounded-xl border border-[#26302c]/15 py-2.5 font-medium">បោះបង់</button>
           <button
-            onClick={() => onSave({ ...form, price: Number(form.price)  0, deposit: Number(form.deposit)  0 })}className="flex-1 rounded-xl bg-[#0f5257] py-2.5 font-semibold text-white hover:bg-[#0c4247]"
+            onClick={() => onSave({ ...form, price: Number(form.price) || 0, deposit: Number(form.deposit) || 0 })}
+            className="flex-1 rounded-xl bg-[#0f5257] py-2.5 font-semibold text-white hover:bg-[#0c4247]"
           >
             រក្សាទុកការកែប្រែ
           </button>
@@ -698,7 +705,8 @@ function StockPage({ motorcycles, onAdd, onEdit, onDelete }) {
               {m.status === "available" && (
                 <button onClick={() => onDelete(m.id)} className="rounded-lg border border-red-200 px-3 py-1.5 text-sm font-medium text-red-600 hover:bg-red-50">លុប</button>
               )}
-            </div></div>
+            </div>
+          </div>
         ))}
       </div>
     </div>
