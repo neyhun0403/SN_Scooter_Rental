@@ -6,15 +6,15 @@ const uid = () => Math.random().toString(36).slice(2, 10);
 const todayISO = () => new Date().toISOString().slice(0, 10);
 const nowHHMM = () => {
   const d = new Date();
-  return ${String(d.getHours()).padStart(2, "0")}:${String(d.getMinutes()).padStart(2, "0")};
+  return String(d.getHours()).padStart(2, "0") + ":" + String(d.getMinutes()).padStart(2, "0");
 };
 const fmtDate = (iso) => {
   if (!iso) return "—";
   const d = new Date(iso + "T00:00:00");
   return d.toLocaleDateString("km-KH", { year: "numeric", month: "short", day: "numeric" });
 };
-const fmtMoney = (n) => $${(Number(n) || 0).toFixed(2)};
-const toDT = (date, time) => new Date(`${date}T${(time || "00:00").slice(0, 5)}:00`);
+const fmtMoney = (n) => "$" + (Number(n) || 0).toFixed(2);
+const toDT = (date, time) => new Date(date + "T" + (time || "00:00").slice(0, 5) + ":00");
 const diffHours = (date1, time1, date2, time2) => {
   if (!date1 || !date2) return null;
   const ms = toDT(date2, time2).getTime() - toDT(date1, time1).getTime();
@@ -26,9 +26,9 @@ const fmtDuration = (hours) => {
   if (hours < 0) return "0 ម៉ោង";
   const days = Math.floor(hours / 24);
   const rem = Math.round(hours % 24);
-  if (days === 0) return ${Math.round(hours)} ម៉ោង;
-  if (rem === 0) return ${days} ថ្ងៃ;
-  return ${days} ថ្ងៃ ${rem} ម៉ោង;
+  if (days === 0) return Math.round(hours) + " ម៉ោង";
+  if (rem === 0) return days + " ថ្ងៃ";
+  return days + " ថ្ងៃ " + rem + " ម៉ោង";
 };
 
 /* ---------- Icons ---------- */
@@ -46,8 +46,8 @@ function PrinterIcon({ className = "h-4 w-4" }) {
 function StatusPill({ status }) {
   const isActive = status === "active";
   return (
-    <span className={`inline-flex items-center gap-1.5 rounded-full px-3 py-1 text-xs font-semibold ${isActive ? "bg-amber-100 text-amber-800" : "bg-emerald-100 text-emerald-800"}`}>
-      <span className={`h-1.5 w-1.5 rounded-full ${isActive ? "bg-amber-500" : "bg-emerald-500"}`} />
+    <span className={"inline-flex items-center gap-1.5 rounded-full px-3 py-1 text-xs font-semibold " + (isActive ? "bg-amber-100 text-amber-800" : "bg-emerald-100 text-emerald-800")}>
+      <span className={"h-1.5 w-1.5 rounded-full " + (isActive ? "bg-amber-500" : "bg-emerald-500")} />
       {isActive ? "កំពុងជួល" : "បានបិទករណី"}
     </span>
   );
@@ -141,25 +141,26 @@ function Dashboard() {
 
   const activeCount = useMemo(() => (rentals || []).filter((r) => r.status === "active").length, [rentals]);
 
-  /* ---- បង្កើតការជួលថ្មី ---- */
+  /* ---- បង្កតការជួលថ្មី ---- */
   const registerRental = async (form) => {
     const { error } = await supabase.from("rentals").insert([{ ...form, status: "active" }]);
     if (error) { showToast("មានបញ្ហា៖ " + error.message); return; }
     await supabase.from("motorcycles").update({ status: "rented" }).eq("id", form.motorcycle_id);
     await Promise.all([fetchRentals(), fetchMotorcycles()]);
-    showToast("បានចឈ្មោះជួលដោយជោគជ័យ ✓");
+    showToast("បានចឈ្មោះជួលដោយជគជ័យ ✓");
     setPage("manage");
   };
 
-  /* ---- កែសម្រួល / ដាក់ស្នើឡើងវិញ ---- */
+  /* ---- កែសមរួល / ដាក់ស្នើឡើងវញ ---- */
   const updateRental = async (updated) => {
     const { id, ...fields } = updated;
     const { error } = await supabase.from("rentals").update(fields).eq("id", id);
-    if (error) { showToast("មានបញ្ហា៖ " + error.message); return; }
-    await fetchRentals();showToast("បានធ្វើបច្ចុប្បន្នភពដោយជោគជ័យ ✓");
+    if (error) { showToast("មនបញ្ហា៖ " + error.message); return; }
+    await fetchRentals();await fetchRentals();
+    showToast("បានធ្វើបច្ចុប្បន្នភាពដោយជោគជ័យ ✓");
   };
 
-  /* ---- បិទករណី (អាចប្រគល់មុនកាលកណត់) ---- */
+  /* ---- បិទករណី (អាចប្រគល់មុនកាលកំណត់) ---- */
   const closeCase = async (rental, closeData) => {
     const { error } = await supabase.from("rentals").update({ status: "closed", ...closeData }).eq("id", rental.id);
     if (error) { showToast("មានបញ្ហា៖ " + error.message); return; }
@@ -180,7 +181,7 @@ function Dashboard() {
     const { error } = await supabase.from("motorcycles").update(fields).eq("id", id);
     if (error) { showToast("មានបញ្ហា៖ " + error.message); return; }
     await fetchMotorcycles();
-    showToast("បានកែសម្រួលព័តមានម៉ូតូ ✓");
+    showToast("បានកែសម្រួលព័ត៌មានម៉ូតូ ✓");
   };
   const deleteMotorcycle = async (id) => {
     const { error } = await supabase.from("motorcycles").delete().eq("id", id);
@@ -226,9 +227,9 @@ function Dashboard() {
             {[
               { id: "register", label: "ចុះឈ្មោះជួលថ្មី" },
               { id: "manage", label: "គ្រប់គ្រងទិន្នន័យ" },
-              { id: "stock", label: "ស្តុកម៉ូត" },
+              { id: "stock", label: "ស្តុកម៉ូតូ" },
             ].map((t) => (
-              <button key={t.id} onClick={() => setPage(t.id)} className={`rounded-lg px-4 py-2 text-sm font-medium transition ${page === t.id ? "bg-[#0f5257] text-white shadow-sm" : "text-[#26302c]/60 hover:bg-[#26302c]/5"}`}>
+              <button key={t.id} onClick={() => setPage(t.id)} className={"rounded-lg px-4 py-2 text-sm font-medium transition " + (page === t.id ? "bg-[#0f5257] text-white shadow-sm" : "text-[#26302c]/60 hover:bg-[#26302c]/5")}>
                 {t.label}
               </button>
             ))}
@@ -284,17 +285,17 @@ function Receipt({ rental, motorcycle }) {
       </div>
       <div className="my-4 border-t border-dashed border-gray-400" />
       <div className="space-y-1 text-sm">
-        <Row label="ម៉ូតូ" value={motorcycle ? ${motorcycle.brand} (${motorcycle.color}) : "—"} />
+        <Row label="ម៉ូតូ" value={motorcycle ? motorcycle.brand + " (" + motorcycle.color + ")" : "—"} />
         <Row label="លេខផ្លាកលេខ" value={motorcycle?.plate || "—"} />
         <Row label="ប្រភេទសោ" value={motorcycle?.key_type || "—"} />
         <Row label="ប្រភេទជួល" value={rental.rental_type === "monthly" ? "ជួលខែ" : "ជួលថ្ងៃ (24ម៉ោង)"} />
       </div>
       <div className="my-4 border-t border-dashed border-gray-400" />
       <div className="space-y-1 text-sm">
-        <Row label="ចាប់ផ្ដើម" value={`${fmtDate(rental.start_date)} ${(rental.start_time || "").slice(0, 5)}`} />
-        <Row label="កំណត់ប្រគល់វិញ" value={`${fmtDate(rental.expected_return_date)} ${(rental.expected_return_time || "").slice(0, 5)}`} />
+        <Row label="ចាប់ផ្ដើម" value={fmtDate(rental.start_date) + " " + (rental.start_time || "").slice(0, 5)} />
+        <Row label="កំណត់ប្រគល់វិញ" value={fmtDate(rental.expected_return_date) + " " + (rental.expected_return_time || "").slice(0, 5)} />
         {rental.status === "closed" && (
-          <Row label="ប្រគល់មកវិញ (ពិត)" value={`${fmtDate(rental.actual_return_date)} ${(rental.actual_return_time || "").slice(0, 5)}`} />
+          <Row label="ប្រគល់មកវិញ (ពិត)" value={fmtDate(rental.actual_return_date) + " " + (rental.actual_return_time || "").slice(0, 5)} />
         )}
       </div>
       <div className="my-4 border-t border-dashed border-gray-400" />
@@ -365,7 +366,7 @@ function RegisterPage({ motorcycles, onSubmit }) {
   const submit = (e) => {
     e.preventDefault();
     if (!form.customer_name  !form.customer_phone  !form.motorcycle_id || !form.expected_return_date) {
-      setError("សូមបំពេញព័ត៌មានដែលមានសញញា * ឱ្យបានគ្រប់ជមុនសិន");
+      setError("សូមបំពេញព័ត៌មានដែលមានសញ្ញា * ឱ្យបានគ្រប់ជាមុនសិន");
       return;
     }
     setError("");
@@ -403,7 +404,7 @@ function RegisterPage({ motorcycles, onSubmit }) {
           <span className="mb-1.5 block text-sm font-medium">ប្រភេទជួល</span>
           <div className="flex gap-2">
             {[{ v: "daily", l: "ថ្ងៃ (24ម៉ោង)" }, { v: "monthly", l: "ខែ" }].map((opt) => (
-              <button type="button" key={opt.v} onClick={() => setForm((f) => ({ ...f, rental_type: opt.v }))} className={`flex-1 rounded-xl border px-4 py-2.5 text-sm font-semibold transition ${form.rental_type === opt.v ? "border-[#0f5257] bg-[#0f5257] text-white" : "border-[#26302c]/15 bg-white text-[#26302c]/70 hover:border-[#0f5257]/40"}`}>
+              <button type="button" key={opt.v} onClick={() => setForm((f) => ({ ...f, rental_type: opt.v }))} className={"flex-1 rounded-xl border px-4 py-2.5 text-sm font-semibold transition " + (form.rental_type === opt.v ? "border-[#0f5257] bg-[#0f5257] text-white" : "border-[#26302c]/15 bg-white text-[#26302c]/70 hover:border-[#0f5257]/40")}>
                 {opt.l}
               </button>
             ))}
@@ -475,7 +476,7 @@ function ManagePage({ rentals, motorcycles, onUpdate, onClose, onPrint }) {
       </div>
       <div className="mb-4 flex gap-2">
         {[{ v: "all", l: "ទាំងអស់" }, { v: "active", l: "កំពុងជួល" }, { v: "closed", l: "បានបិទ" }].map((f) => (
-          <button key={f.v} onClick={() => setFilter(f.v)} className={`rounded-full px-4 py-1.5 text-sm font-medium transition ${filter === f.v ? "bg-[#0f5257] text-white" : "bg-white text-[#26302c]/60 border border-[#26302c]/10"}`}>
+          <button key={f.v} onClick={() => setFilter(f.v)} className={"rounded-full px-4 py-1.5 text-sm font-medium transition " + (filter === f.v ? "bg-[#0f5257] text-white" : "bg-white text-[#26302c]/60 border border-[#26302c]/10")}>
             {f.l}
           </button>
         ))}
@@ -559,7 +560,7 @@ function CloseModal({ rental, onCancel, onConfirm }) {
               <input type="time" className={inputCls} value={returnTime} onChange={(e) => setReturnTime(e.target.value)} />
             </Field>
           </div>
-          <div className={`rounded-xl p-3 text-sm ${isEarly ? "bg-amber-50 text-amber-800" : "bg-emerald-50 text-emerald-800"}`}>
+          <div className={"rounded-xl p-3 text-sm " + (isEarly ? "bg-amber-50 text-amber-800" : "bg-emerald-50 text-emerald-800")}>
             {isEarly ? "⚠ ប្រគល់មកវិញមុនកាលកំណត់ — " : "✓ ប្រគល់តាមកាលកំណត់ — "}
             រយៈពេលជួលជាក់ស្តែង៖ {fmtDuration(actualDuration)}
             <div className="mt-0.5 text-xs opacity-70">(កាលកំណត់ដើម៖ {fmtDate(rental.expected_return_date)} {(rental.expected_return_time || "").slice(0, 5)})</div>
@@ -657,7 +658,7 @@ function StockPage({ motorcycles, onAdd, onEdit, onDelete }) {
       <div className="mb-5 flex items-center justify-between">
         <div>
           <h1 className="text-xl font-bold">ស្តុកម៉ូតូ</h1>
-          <p className="mt-1 text-sm text-[#26302c]/55">បញ្ជីម៉ូតូទាំងអស់ក្នុងហាង — ម៉ាក, ឆ្នាំ, ពណ៌, លេខផ្លាក, ប្រភេទសោរ</p>
+          <p className="mt-1 text-sm text-[#26302c]/55">បញ្ជីម៉ូតូទាំងអស់ក្នុងហាង — ម៉ាក, ឆ្នាំ, ពណ៌, លេខផ្លាក, ប្រភេទសោ</p>
         </div>
         <button onClick={() => { setForm(blank); setEditingId(null); setShowForm((s) => !s); }} className="rounded-xl bg-[#0f5257] px-4 py-2.5 text-sm font-semibold text-white hover:bg-[#0c4247]">
           {showForm ? "បិទ" : "+ បន្ថែមម៉ូតូ"}
@@ -686,7 +687,7 @@ function StockPage({ motorcycles, onAdd, onEdit, onDelete }) {
           <div key={m.id} className="rounded-2xl border border-[#26302c]/10 bg-white p-4 shadow-sm">
             <div className="flex items-start justify-between">
               <KeyTag plate={m.plate} />
-              <span className={`rounded-full px-2.5 py-0.5 text-[11px] font-semibold ${m.status === "available" ? "bg-emerald-100 text-emerald-800" : "bg-amber-100 text-amber-800"}`}>
+              <span className={"rounded-full px-2.5 py-0.5 text-[11px] font-semibold " + (m.status === "available" ? "bg-emerald-100 text-emerald-800" : "bg-amber-100 text-amber-800")}>
                 {m.status === "available" ? "នៅសល់" : "កំពុងជួល"}
               </span>
             </div>
