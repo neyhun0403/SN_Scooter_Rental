@@ -1,0 +1,7 @@
+body {
+  margin: 0;
+  font-family: "Noto Sans Khmer", "Khmer OS", "Leelawadee UI", system-ui, sans-serif;
+}
+@media print {
+  @page { margin: 12mm; }
+}
